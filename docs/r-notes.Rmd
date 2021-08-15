@@ -1,0 +1,128 @@
+---
+title: "R Notes for Beginners"
+author: "Marie Rivers"
+date: "8/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+# continue with file: fish-length-weight in day 1 folder and fix inserted Lyra pic
+* if this file gets too long to be useful, create docs for each header (or find a way to expand and condenes sections)
+
+# Setup and Getting Starting
+In an Rmarkdown file, add packages to the setup chunk below knitr. These packages may include: 
+`library(tidyverse)`
+
+# Creating Vectors, Matrices, and Data Frames
+### data frames
+```{r}
+# create a data frame
+df_name <- data.frame("variable_1", "variable_2")
+
+```
+### sequences
+```{r}
+# create a vector from x to y by z
+seq_1 <- seq(from = 1, to = 20, by = 1)
+seq_1 # return the vector
+```
+
+
+# Tidy Data & Wrangling
+
+# Filtering and Selecting from Data Frames
+
+# gg plot
+
+- basics
+- formating
+- cool/fun
+
+- tell it you're using ggplot
+- tell it what data you are using and what data you are plotting 
+- map a variable to an aesthetic
+- tell the graph the type of geometry to create
+```{r}
+
+```
+
+
+# Functions and Loops
+
+# Miscellaneous
+
+# Symbols & Math Operators
+### Logarithms `log()`
+```{r}
+log(4)
+
+```
+### exponents `exp()`
+```{r}
+exp(5)
+log(exp(1))
+```
+
+# Shortcut Keys
+Add a new code chunk: command + option + i
+
+pipe %>%:  command + shift + m
+
+
+# Rmarkdown formatting
+
+Use back quotes (shift + the button in the top left of the keyboard below esc) to make text appear in code font
+
+# `# Largest header`
+
+## `## medium header`
+
+### `### small header`
+
+#### `#### even smaller header`
+
+##### `##### smallest header`
+
+regular text
+
+*`*italicized font*`*
+
+**`**bold font**`**
+
+- `- bullet points`
+  - `"tab" - for indented bullet`
+    - `"tab" "tab' - for more indented`
+
+# FIX THIS
+Here's a picture of Lyra
+ 
+ ! [Alt text] (/Users/marierivers/Documents/UCSB Environmental Data Science/r_notes/figs/IMG_1280.jpq)
+
+# Debugging and Troubleshooting
+
+# To Do List
+- notes from notebook
+- Rmarkdown files from EDS 212
+- Rmarkdown files from EDS 221
+- EDS 212 class lecture slides
+  - day 1
+  - day 2
+  - day 3
+  - day 4
+  - day 5
+- EDS 221 class lecture slides
+  - day 1
+  - day 2
+  - day 3
+  - day 4
+  - day 5
+  - day 6
+  - day 7
+  - day 8
+  - day 9
+  - day 10
+- EDS 212 interactive sessions
+- EDS 221 interactive session
