@@ -8,13 +8,17 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(palmerpenguins)
+library(skimr)
+library(GGally)
 ```
-# continue with file: fish-length-weight in day 1 folder and fix inserted Lyra pic
-* if this file gets too long to be useful, create docs for each header (or find a way to expand and condenes sections)
+# continue with file: 
+* if this file gets too long to be useful, create docs for each header (or find a way to expand and condenessections)
 
 # Setup and Getting Starting
 In an Rmarkdown file, add packages to the setup chunk below knitr. These packages may include: 
 `library(tidyverse)`
+`library(palmerpenguins)`
 
 # Creating Vectors, Matrices, and Data Frames
 ### data frames
@@ -29,13 +33,130 @@ df_name <- data.frame("variable_1", "variable_2")
 seq_1 <- seq(from = 1, to = 20, by = 1)
 seq_1 # return the vector
 ```
+### vectors
+```{r}
+# Create a vector!
+vec_a <- c(4, 5) #this is how you create a vector in R
+vec_a #return vector a
+vec_b <- c(-3, 10)
+# vector additon
+vec_c <- vec_a + vec_b
+vec_c
+
+# vector subtraction
+vec_d <- vec_b - vec_a
+vec_d
+
+# vector scalar multiplier:
+vec_e <- 4 * vec_b
+vec_e
+
+# if we use the asterisk:
+vec_a * vec_b
+
+# Dot product %*%
+vec_a %*% vec_b
+# the dot product should be a single number
+```
+### Matrix
+```{r}
+cats <- c(1, 3, 5, 8, 10, 0.2, 4, 8, 10, 11, 100)
+
+# wrap cats into a matrix
+cat_matrix <- matrix(data = cats, nrow = 4, ncol = 5, byrow = TRUE)
+
+dogs <- matrix(data = c(1, 0, 2, 3), nrow = 2, ncol = 2, byrow = TRUE)
+fish <- matrix(data = c(0, 8, 2, 6), nrow = 2, ncol = 2, byrow = TRUE)
+dogs + fish
+
+fish - dogs
+4 * dogs
+dogs %*% fish
+
+## Leslie Matrix
+insect_leslie <- matrix(data = c(0, 0, 600, 0.2, 0, 0, 0, 0.08, 0.6), nrow = 3, ncol = 3, byrow = TRUE)
+
+# Specify the initial conditions
+# What is the popluation in each lifestage at year 0?
+insect_y0 <- c(12000, 700, 500)
+
+# project the populaiton in each lifestage for year 1. Use the dot project operator to do matix multiplication with the vector of initial conditions
+insect_y1 <- insect_leslie %*% insect_y0
+insect_y1
+
+#Project the population at each lifestage for years 2, 3, and 4
+insect_y2 <- insect_leslie %*% insect_y1
+insect_y2
+
+insect_y3 <- insect_leslie %*% insect_y2
+insect_y3
+
+insect_y4 <- insect_leslie %*% insect_y3
+insect_y4
+# if 60% of adult females live after laying eggs, change the last number in the list to 0.6
+```
+
+
 
 
 # Tidy Data & Wrangling
+- reshape data with `pivot_longer()`  
+- separating or uniting columns
+
+Use `tidyr::pivot_loger()` to gather columns (convert from wide to long format)  
+Use `tidyr::pivot_wider()` to spread columns (convert from long to wide format)
+Use `tidyr::separate()` to separate elements in a single column into multiple columns, using a separator you specify, so that each variable is in a single column.  
+Everything in the same column should have the same units
+
+## Basic data summaries
+```{r}
+names(diamonds) # returns column names of a data frame
+dim(diamonds) # returns the number of rows and columns in a data frame
+summary(diamonds) # returns min, 1st quartile, median, mean, 3rd quartile, and max for each numeric column; returns counts for text columns
+head(diamonds) # returns the first few rows of the data frame
+tail(diamonds) # returns the last few rows of the data frame
+skimr::skim(diamonds) # returns a summary of the data
+GGally::ggpairs(diamonds) # graphs every numeric variable against every other numeric variable
+View(diamonds) #let's you view a data frame
+class(penguins$species) # deterimine the data type of a given column
+```
+## Find the mean, variance and standard deviation of character height
+```{r}
+sw_height_mean <- mean(starwars$height)
+# the default in the mean function is to NOT remove NA values
+
+sw_height_mean_removeNA <- mean(starwars$height, na.rm = TRUE)
+# use ?starwars in the console to more info about the dataset and the units of height
+
+# variance of character height (var())
+sw_height_variance <- var(starwars$height, na.rm = TRUE)
+
+# standard deviation of character height (sd())
+sw_height_sd <- sd(starwars$height, na.rm = TRUE)
+```
+#### add text that includes a calculated output  
+Mean character height is `r round(sw_height_mean_removeNA, 1)` cm with a standard deviation of `r round(sw_height_sd, 1)` cm.
 
 # Filtering and Selecting from Data Frames
 
+
 # gg plot
+```{r}
+ggplot(data = diamonds, aes(x = price, y = carat)) +
+  geom_point() 
+```
+
+```{r}
+ggplot(data = diamonds, aes(x = carat)) +
+  geom_histogram() # histograms only need 1 variable
+ggplot(data = diamonds, aes(y = carat)) +
+  geom_histogram() # difine the y-axis to have horizaontal bars
+
+# make a histogram of flipper lenghts
+ggplot(data = penguins, aes(x = flipper_length_mm)) +
+  geom_histogram() +
+  facet_wrap(~species)
+```
 
 - basics
 - formating
@@ -46,24 +167,164 @@ seq_1 # return the vector
 - map a variable to an aesthetic
 - tell the graph the type of geometry to create
 ```{r}
+eq_fx <- function(x) {
+  (2.4 * (exp(-0.05*x)) * sin(x))
+}
+ggplot(data = data.frame (x = c(-.5, .5)), aes(x=x)) +
+  stat_function(fun = eq_fx)
+```
 
+```{r}
+# Penguin bill length vs. bill depth
+ggplot(data = penguins, aes(x = bill_depth_mm, y = bill_length_mm)) +
+  geom_point(aes(color = species)) +
+  labs (x = "bill length (mm)",
+        y = "bill depth (mm)",
+        title = "Palmer penguins bill size",
+        caption = "data collected by KB Gorman ey al. at Palmer Station",
+        color = "species")
+```
+Jitter Plot
+```{r}
+ggplot(data = penguins, aes(x = species, y = flipper_length_mm)) +
+  geom_jitter() +
+  labs (x = "species",
+        y = "flipper length (mm)",
+        title = "penguin flipper length by species")
+```
+
+# Functions and Loops
+```{r}
+weight_grams <- function(a, b, length_cm) {
+  weight_grams = (a * (length_cm^b))
+}
+barracuda <- weight_grams(a = 0.0181, b = 3.27, length_cm = 60)
+print(barracuda)
+
+fish_length <- seq(from = 0, to = 200, by = 1)
+
+barracuda_weight <- weight_grams(a = 0.0181, b = 3.27, length_cm = fish_length)
+barracuda_df <- data.frame(fish_length, barracuda_weight)
+
+ggplot(data = barracuda_df, aes(x = fish_length, y = barracuda_weight)) +
+  geom_point(color = "red") +
+  labs(x = "fish length (cm)",
+       y = "weight (grams)",
+       title = "Barracuda Weight",
+       subtitle = "barracuda weight as a function of fish length")
 ```
 
 
-# Functions and Loops
-
-# Miscellaneous
-
 # Symbols & Math Operators
+
+## Logical Expressions
+```{r}
+5 < 10 # true
+# greater than and less then work alphabetically (a is small, z is large)
+"cat" > "armadillo" # true
+"cat" > "elephant" # false
+
+10 <= 11 # true
+5 >= 4 # true
+3 <= 1 # false
+
+# play around with vectors
+tarantulas <- c(1, 3, 7, 10, 15)
+tarantulas > 5 # false, false, true, true, true
+```
+
+
+## Logical operators:
+
+- `!`
+- `&`
+- `|`
+```{r}
+3 < 1 | 8 > 2
+
+6 < 10 & 5 < 1
+
+7 != 11
+
+4 != 4 | 2 < 5 | 6 > 10
+
+0 == TRUE
+0 == FALSE
+1 == TRUE #true
+# zero is false and 1 is true
+```
+
 ### Logarithms `log()`
 ```{r}
 log(4)
-
 ```
-### exponents `exp()`
+### Exponents `exp()`
 ```{r}
 exp(5)
 log(exp(1))
+```
+### Derivatives
+```{r}
+fx <- expression(x^2)
+df_dx <- D(fx, name = 'x')
+
+# Evaluate the slope of f(x) at x = 831
+# x <- 831
+# evaluate over a range
+x <- seq(from = -10, to = 10, by = 0.5)
+eval(expr = df_dx)
+x <- 831
+eval(expr = df_dx)
+```
+
+```{r}
+ft <- expression(3 * (t ^ 2) - 4 * cos(t))
+df_dt <- D(expr = ft, name = 't')
+df_dt
+```
+
+```{r}
+# First Order univariate derivatives
+fx <- expression(x ^ 2)
+df_dx <- D(expr = fx, 'x')
+df_dx
+x <- 3
+eval(expr = df_dx)
+
+Pa <- expression(2 * (((3 * a) + 2) ^ 4) - 5)
+dP_da <- D(expr = Pa, 'a')
+dP_da
+a <- 1.2
+eval(expr = dP_da)
+
+gt <- expression((-4 * t) / (((t ^ 2) + 1)  ^ 3))
+dg_dt <- D(expr = gt, 't')
+dg_dt
+t <- 0
+eval(expr = dg_dt)
+```
+
+```{r}
+# Higher order univariate derivatives
+Gz <- expression(4.6 - 1.9 * (z^3))
+dG_dz <- D(expr = Gz, 'z')
+dG_dz
+
+d2G_dz2 <- D(expr = dG_dz, 'z')
+d2G_dz2
+```
+
+```{r}
+# partial derivatives
+f_xyz <- expression(2*x^2*y - 3*x + 1 + 4*z^4*x)
+df_dx <- D(expr = f_xyz, 'x')
+df_dx
+
+df_dy <- D(expr = f_xyz, 'y')
+df_dy
+
+dg_dz <- D(expr = f_xyz, 'z')
+dg_dz
 ```
 
 # Shortcut Keys
@@ -72,47 +333,68 @@ Add a new code chunk: command + option + i
 pipe %>%:  command + shift + m
 
 
-# Rmarkdown formatting
-
+# Rmarkdown formatting  
 Use back quotes (shift + the button in the top left of the keyboard below esc) to make text appear in code font
 
-# `# Largest header`
+# `# Largest header`  
+## `## medium header`  
+### `### small header`  
+#### `#### even smaller header`  
+##### `##### smallest header`  
+regular text  
+*`*italicized font*`*  
+**`**bold font**`**  
+- `- bullet points`  
+  - `"tab -" for indented bullet`  
+    - `"tab tab -" for more indented`
 
-## `## medium header`
+End a line with two spaces to start a new line.`  `  
+Or end with a backslash to make a new line `\`\
 
-### `### small header`
+```{r, echo = FALSE}
+# this overrides the global echo option established up top. 
+# if echo = false you wont see raw code in the knitted html.
+```
 
-#### `#### even smaller header`
+Formatted equations: `equation: $e^2 + 1 = 0$`  
+equation: $e^2 + 1 = 0$
+Prey equation: 
+$$\frac{dx}{dt}=\alpha x-\beta xy$$
+### Update theme in setup chunk  
+---  
+title: "My Fancy Rmd"  
+subtitle: "Some changes in YAML"  
+author: "Marie Rivers"  
+output:  
+  html_document:  
+    theme: paper  
+    toc: true  
+    toc_float: true  
+    number_sections: true  
+    code_folding: hide  
+---  
+add layers to the output line. YAML is space sensitive. put cursor to html, hit return, hit tab...OR, add colun : after html_document and then put cursor infront of html and hit return to automatically get the tab. Google to get different built in Rmarkdown themes
 
-##### `##### smallest header`
-
-regular text
-
-*`*italicized font*`*
-
-**`**bold font**`**
-
-- `- bullet points`
-  - `"tab" - for indented bullet`
-    - `"tab" "tab' - for more indented`
-
-# FIX THIS
-Here's a picture of Lyra
- 
- ! [Alt text] (/Users/marierivers/Documents/UCSB Environmental Data Science/r_notes/figs/IMG_1280.jpq)
+## Code chunk options
+```{r}
+# adding include = FALSE hides the code chunk when you knit
+# ECHO = FALSE hides code
+# to hide warnings in knitted output, set warning = FALSE in the beginning of the code chunk
+# eval = FALSE means the code will show up in the knitted document, but it wont run
+```
 
 # Debugging and Troubleshooting
+
+# Miscellaneous
+To use git hub, in the console, type usethis::use_git(), then answer yes, they type usethis::use_github(). There might be a more efficient way to add git with a library or something like that.
+
+To upload to github, knit, select the two files, commit, add a comment, commit, pull, close, push
 
 # To Do List
 - notes from notebook
 - Rmarkdown files from EDS 212
 - Rmarkdown files from EDS 221
 - EDS 212 class lecture slides
-  - day 1
-  - day 2
-  - day 3
-  - day 4
-  - day 5
 - EDS 221 class lecture slides
   - day 1
   - day 2
@@ -124,5 +406,6 @@ Here's a picture of Lyra
   - day 8
   - day 9
   - day 10
-- EDS 212 interactive sessions
 - EDS 221 interactive session
+- look at Rstudio cheat sheets and reference guides
+- tidyr cheat sheet
