@@ -2,15 +2,25 @@
 title: "R Notes for Beginners"
 author: "Marie Rivers"
 date: "8/14/2021"
-output: html_document
+output:  
+  html_document:  
+    theme: paper  
+    toc: true  
+    toc_float: true  
+    number_sections: true  
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(palmerpenguins)
+library(here)
 library(skimr)
 library(GGally)
+library(lubridate)
+library(janitor)
+library(kableExtra)
 ```
 # continue with file: 
 * if this file gets too long to be useful, create docs for each header (or find a way to expand and condenessections)
@@ -26,6 +36,12 @@ In an Rmarkdown file, add packages to the setup chunk below knitr. These package
 # create a data frame
 df_name <- data.frame("variable_1", "variable_2")
 
+df_1 <- data.frame(region = c("A", "B", "A", "D"),
+                   species = c("otter", "great white", "sea lion", "gray whale"),
+                   count = c(12, 2, 36, 6))
+df_1
+class(df_1$species)
+max_count <- max(df_1$count) # get the maximum value of the specified column
 ```
 ### sequences
 ```{r}
@@ -36,6 +52,7 @@ seq_1 # return the vector
 ### vectors
 ```{r}
 # Create a vector!
+# the `c` function is for combind or concatenate
 vec_a <- c(4, 5) #this is how you create a vector in R
 vec_a #return vector a
 vec_b <- c(-3, 10)
@@ -58,6 +75,17 @@ vec_a * vec_b
 vec_a %*% vec_b
 # the dot product should be a single number
 ```
+## Checking data types
+```{r}
+vec_1 <- c(2, 5, 9, 10, 8, 12, 1, 0)
+class(vec_1) # determine the class of a vector
+typeof(vec_1) # determine the type of numeric
+vec_1_e3 <- vec_1[3] # store the value of the item in the 3rd position of the vector
+vec_1_e5to7 <- vec_1[5:7] # store the items in positions 5 through 7
+vec_1_char <- as.character(vec_1) # creates a vector where the items are converted from numbers to characters
+vec_2 <- c(town = "Santa Barbara", location = "Rincon", swell = "south") # create a vector with variable names and values
+```
+
 ### Matrix
 ```{r}
 cats <- c(1, 3, 5, 8, 10, 0.2, 4, 8, 10, 11, 100)
@@ -95,7 +123,27 @@ insect_y4 <- insect_leslie %*% insect_y3
 insect_y4
 # if 60% of adult females live after laying eggs, change the last number in the list to 0.6
 ```
+### Lists in R
+```{r}
+# vectors must contain all the same types (homogeneous). Lists can have different classes (heterogeneous)
+urchins <- list("blue", 2, FALSE, 1200L)
 
+# the returned [[1]] refers the 1st element in the list, [[2]] refers to the 2nd element
+urchins[[1]] # this returns the contents of that element. Use the double brackets most of the time
+urchins[1] # this returns a list that only contains 1 element and that elements is "blue"
+
+urchins_2 <- list("blue", 
+                  c(1, 2, 3), 
+                  seq(from = 0, to = 50, by = 0.5),
+                  1200L)
+
+tacos <- list(topping = c("onion", "cilantro", "guacamole"),
+              filling = c("beans", "meat", "veggies"),
+              price = c(6.75, 8.25, 9.50))
+
+taco_price <- tacos[[3]]
+tacos$filling
+```
 
 
 
@@ -108,6 +156,12 @@ Use `tidyr::pivot_wider()` to spread columns (convert from long to wide format)
 Use `tidyr::separate()` to separate elements in a single column into multiple columns, using a separator you specify, so that each variable is in a single column.  
 Everything in the same column should have the same units
 
+## Read in a data csv
+```{r}
+toolik_chlorophyll <- read_csv(here("data", "toolik_chlorophyll.csv"), na = ".")
+```
+
+
 ## Basic data summaries
 ```{r}
 names(diamonds) # returns column names of a data frame
@@ -119,6 +173,8 @@ skimr::skim(diamonds) # returns a summary of the data
 GGally::ggpairs(diamonds) # graphs every numeric variable against every other numeric variable
 View(diamonds) #let's you view a data frame
 class(penguins$species) # deterimine the data type of a given column
+
+toolik_chlorophyll <- clean_names(toolik_chlorophyll) # makes column names lower case and removes spaces between words
 ```
 ## Find the mean, variance and standard deviation of character height
 ```{r}
@@ -137,10 +193,269 @@ sw_height_sd <- sd(starwars$height, na.rm = TRUE)
 #### add text that includes a calculated output  
 Mean character height is `r round(sw_height_mean_removeNA, 1)` cm with a standard deviation of `r round(sw_height_sd, 1)` cm.
 
-# Filtering and Selecting from Data Frames
+## janitor::get_dupes()
+will check for duplicates across all variables unless you specify variables
+```{r}
+starwars_dupes <- get_dupes(starwars)
+starwars_dupes_names <- starwars %>% 
+  get_dupes(name)
 
+starwars_dupes_height <- starwars %>% 
+  get_dupes(height)
+```
+### dplyr::across()
+allows you to perform operations across multiple columns based on conditions you specify about the columns
+```{r}
+# convert anything that's a character to lower case
+sw_across <- starwars %>% 
+  mutate(across(where(is.character), tolower))
+```
+Find the mean of all numeric columns
+```{r}
+starwars %>% 
+  group_by(homeworld) %>% 
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+```
+Separate a column into multiple columns based on a delimiter
+```{r}
+starwars %>% 
+  separate(skin_color, into = c("col_1", "col_2"), sep = ",")
+```
+
+```{r}
+penguins_column_changes <- penguins %>% 
+  mutate(across(where(is.numeric), as.character)) %>% # change all numeric variables to characters
+  mutate(island = fct_relevel(island, c("Dream", "Biscoe", "Torgersen"))) %>% # order items into factor levels
+  unite(island_yr, c(island, year), sep = "_") %>% # combine columns
+  filter(species %in% c("Adelie", "Chinstrap")) %>% # filter items included in a vector (but not necessarily in that order)
+  relocate(sex, .after = species) %>% # relocate columns
+  rename(penguin_spp = species) # rename a column header
+```
+
+Storing specific things from a data frame
+```{r}
+mack_verts <- read_csv(here("data", "AS00601.csv")) %>% 
+  clean_names()
+
+### store the 5th value in column "weight" as `mc_wt_5`
+mc_wt_5 <- mack_verts$weight[5]
+# store the values in position 8 through 20
+mc_length_8_20 <- mack_verts$length1[8:20] #
+### store everything in column `sampledate` as a vector called mc_dates
+mc_dates <- mack_verts$sampledate
+```
+## Make a salamander subset
+```{r}
+mc_salamanders <- mack_verts %>% 
+  filter(species == "DITE")
+
+mc_all_salamanders <- mack_verts %>% 
+  filter(species != "ONCL")
+
+mc_rhol <- mack_verts %>% 
+  filter(species == "RHOL")
+
+```
+
+
+# Filtering and Selecting from Data Frames
+```{r}
+# use filter to create subset of data based on certain rows. Use pipe operator to perform things in sequence (and then)
+# pipe shortcut: command + shift + M
+adelies <- penguins %>% # start with penguins then do this... Use two equal signs because you are asking "is equal?"
+  filter(species == "Adelie") %>%  # don't need to write the data frame because you already piped it in
+  mutate(body_mass_kg = body_mass_g / 1000) # used one equal sign because we are assigning, not asking if equal
+unique(adelies$species) # check that the subset only has Adelies
+```
+## summary statistics for a filtered data frame
+```{r}
+toolik_biochem <- read_csv(here("data", "2011_Kling_Akchem.csv"), na = ".") %>% 
+  janitor::clean_names()
+
+inlet_biochem <- toolik_biochem %>% 
+  filter(site == "Toolik Inlet" | site == "Toolik inlet") %>% # filter using OR
+  select(p_h, doc_u_m, tdn_u_m) # select specific columns
+
+inlet_biochem_summary <- inlet_biochem %>% 
+  summarize(mean_ph = mean(p_h, na.rm = TRUE), # don't include blank values
+            mean_doc = mean(doc_u_m, na.rm = TRUE),
+            mean_tdn = mean(tdn_u_m, na.rm = TRUE))
+
+mean_biochem <- vector(mode = "numeric", length = ncol(inlet_biochem))
+for (i in 1:ncol(inlet_biochem)) {
+  mean_val <- mean(inlet_biochem[[i]], na.rm = TRUE)
+  mean_biochem[[i]] <- mean_val
+}
+```
+
+
+
+# Conditional statements & for loops
+## Conditional statements
+```{r}
+pm2_5 <- 248
+if (pm2_5 < 100) {
+  print("low to moderate risk")
+} else if (pm2_5 >= 100 & pm2_5 < 150) {
+  print("unhealthy for sensitive groups")
+} else {
+  print("health risk present")
+}
+
+species <- "blue whale"
+if (str_detect(species, "whale")) {
+  print("You found a whale!")
+} else {
+  print("better luck next time")
+}
+
+max_airtemp_c <- 24.1
+if (max_airtemp_c > 27) {
+  print("temperature too high")
+} else {
+  print("temperature OK")
+}
+
+base_burrito <- 6.50
+main_ingredient <- "veggie"
+switch(main_ingredient,
+       "veggie" = print(base_burrito),
+       "chicken" = print(base_burrito + 3.00),
+       "steak" = print(base_burrito + 3.25))
+
+# type ?str_detec in the console to learn more. It's in the stringr package which is in the tidyverse
+sbc_observations <- c("blue whale", "gray whale", "whale", "gray wale", "dolphin", "sea lion", "blue whale")
+str_detect(sbc_observations, pattern = "whale")
+
+# an example of str_detect() within a conditional statement
+phrase <- "I reallly love data science!"
+if (str_detect(phrase, "data")) {
+  print("cool")
+}
+
+# if-else statements
+pika <- 45
+if (pika > 60) {
+  print("large pike")
+} else {
+  print("small pika")
+}
+```
+## For loops
+```{r}
+fish <- c(8, 10, 12, 23)
+total_fish <- sum(fish)
+percent_pop <- vector(mode = "numeric", length = length(fish))
+for (i in seq_along(fish)) {
+  fishy_fish <- 100 * fish[i] / total_fish
+  percent_pop[i] <- fishy_fish
+}
+percent_pop
+
+month.name
+months <- c(month.name)
+seq_along(months)
+
+for (i in seq_along(months)) {
+  print(paste(months[i], "is month", i))
+}
+```
+
+```{r}
+species <- "dog"
+switch(species, 
+       "cat" = print("meow"),
+       "lion" = print("roar"),
+       "owl" = print("screech"),
+       "fox" = print("obnmoxious"),
+       print("something else"))
+
+vec <- seq(from = 0, to = 12, by = 0.5)
+length(vec)
+
+bats <- c(0, -1, 2, 1000, 500, 6)
+seq_along(bats)
+
+tigers <- c(29, 34, 82)
+lions <- c(2, 18, 6)
+big_cats <- vector(mode = "numeric", length = length(tigers))
+
+for (i in seq_along(tigers)) {
+  total_cats <- tigers[i] + lions[i]
+  big_cats[i] <- total_cats
+}
+big_cats
+seq_along(tigers)
+
+animal <- c("cat", "dog", "dog", "zebra", "dog")
+for (i in seq_along(animal)) {
+  if (animal[i] == "dog") {
+    print("I love dogs")
+  } else
+    print("these are other animals")
+}
+
+mean_mtcars <- vector(mode = "numeric", length = ncol(mtcars))
+
+for (i in 1:ncol(mtcars)) {
+  mean_val <- mean(mtcars[[i]], na.rm = TRUE)
+  mean_mtcars[[i]] <- mean_val
+}
+mean_mtcars
+# ncol() returns the number of columns in a data frame
+```
+
+```{r}
+animal <- c("cat", "dog", "dog", "car", "zebra", "elephant")
+for (i in seq_along(animal)) {
+  if (animal[i] == "dog") {
+    print("I love dogs")
+} else {
+    print("this is a different animal")
+  }
+}
+
+species <- c("dog", "elephant", "goat", "dog", "dog", "elephant")
+age_human_years <- c(3, 8, 4, 6, 12, 18)
+animal_ages <- vector(mode = "numeric", length = length(species))
+
+for (i in seq_along(species)) {
+  if (species[i] == "dog") {
+    animal_ages <- age_human_years[i]*7
+  } else if (species[i] == "elephant") {
+    animal_ages <- age_human_years[i] * 0.88 
+  } else if (species[i] == "goat") {
+      animal_ages <- age_human_years[i] * 4.7
+  }
+  animal_ages[i] <- animal_ages
+}
+```
+## Functions and Loops
+```{r}
+weight_grams <- function(a, b, length_cm) {
+  weight_grams = (a * (length_cm^b))
+}
+barracuda <- weight_grams(a = 0.0181, b = 3.27, length_cm = 60)
+print(barracuda)
+
+fish_length <- seq(from = 0, to = 200, by = 1)
+
+barracuda_weight <- weight_grams(a = 0.0181, b = 3.27, length_cm = fish_length)
+barracuda_df <- data.frame(fish_length, barracuda_weight)
+
+ggplot(data = barracuda_df, aes(x = fish_length, y = barracuda_weight)) +
+  geom_point(color = "red") +
+  labs(x = "fish length (cm)",
+       y = "weight (grams)",
+       title = "Barracuda Weight",
+       subtitle = "barracuda weight as a function of fish length")
+```
 
 # gg plot
+- tell it you're using ggplot
+- tell it what data you are using and what data you are plotting 
+- map a variable to an aesthetic
+- tell the graph the type of geometry to create
 ```{r}
 ggplot(data = diamonds, aes(x = price, y = carat)) +
   geom_point() 
@@ -156,16 +471,13 @@ ggplot(data = diamonds, aes(y = carat)) +
 ggplot(data = penguins, aes(x = flipper_length_mm)) +
   geom_histogram() +
   facet_wrap(~species)
+
+ggplot(data = adelies, aes(x = flipper_length_mm, y = body_mass_kg)) +
+  geom_point(color = "blue") +
+  geom_line(aes(color = island)) + # connect points with lines
+  facet_wrap(~island)
 ```
 
-- basics
-- formating
-- cool/fun
-
-- tell it you're using ggplot
-- tell it what data you are using and what data you are plotting 
-- map a variable to an aesthetic
-- tell the graph the type of geometry to create
 ```{r}
 eq_fx <- function(x) {
   (2.4 * (exp(-0.05*x)) * sin(x))
@@ -192,27 +504,36 @@ ggplot(data = penguins, aes(x = species, y = flipper_length_mm)) +
         y = "flipper length (mm)",
         title = "penguin flipper length by species")
 ```
-
-# Functions and Loops
+change point size based on a variable, make points transparent, reverse y-axis
 ```{r}
-weight_grams <- function(a, b, length_cm) {
-  weight_grams = (a * (length_cm^b))
-}
-barracuda <- weight_grams(a = 0.0181, b = 3.27, length_cm = 60)
-print(barracuda)
-
-fish_length <- seq(from = 0, to = 200, by = 1)
-
-barracuda_weight <- weight_grams(a = 0.0181, b = 3.27, length_cm = fish_length)
-barracuda_df <- data.frame(fish_length, barracuda_weight)
-
-ggplot(data = barracuda_df, aes(x = fish_length, y = barracuda_weight)) +
-  geom_point(color = "red") +
-  labs(x = "fish length (cm)",
-       y = "weight (grams)",
-       title = "Barracuda Weight",
-       subtitle = "barracuda weight as a function of fish length")
+chlorophyll_plot <- ggplot(data = toolik_chlorophyll, aes(x = active_chl_a_ug_l, y = depth)) +
+  geom_point(aes(size = active_chl_a_ug_l),
+             color = "cyan",
+             alpha = 0.5) +  # makes things transparent
+  theme_dark() +
+  scale_y_reverse()
 ```
+`ggsave` to saved graphs as figures
+```{r}
+ggsave(here("figs", "chlorophyll_graph.jpg"), plot = chlorophyll_plot)
+```
+
+```{r}
+toolik_weather <- read_csv(here::here("data", "toolik_weather.csv"), 
+                           na = "#N/A") %>% 
+  clean_names()
+toolik_temp_plot <- ggplot(data = toolik_weather, aes(x = as.factor(month), y = daily_air_temp_mean_c)) + # months in x-axis as factor
+  geom_jitter(aes(color = daily_air_temp_mean_c), show.legend = FALSE) + # don't show legend
+  scale_color_gradient(low = "blue", high = "orange") +
+  theme_minimal() +
+  labs(title = "Toolik Station daily air temperature",
+       x = "Month",
+       y = "Daily mean air temperatures (Celsius)")
+
+toolik_temp_plot
+ggsave(here("figs", "toolik_temp_plot.png"), height = 6, width = 7) # set dimensions of exported figure
+```
+
 
 
 # Symbols & Math Operators
@@ -231,6 +552,10 @@ ggplot(data = barracuda_df, aes(x = fish_length, y = barracuda_weight)) +
 # play around with vectors
 tarantulas <- c(1, 3, 7, 10, 15)
 tarantulas > 5 # false, false, true, true, true
+
+pinyon_pine <- 14
+pinyon_pine == 10 # does pinyon_pine match a value of 10?
+pinyon_pine != 25 # does pinyon_pine NOT match a value of 25
 ```
 
 
@@ -332,6 +657,9 @@ Add a new code chunk: command + option + i
 
 pipe %>%:  command + shift + m
 
+run code: command + return
+highlight specific lines of code to only run those (command + return), but don't highlight pipes or plus signs
+
 
 # Rmarkdown formatting  
 Use back quotes (shift + the button in the top left of the keyboard below esc) to make text appear in code font
@@ -380,7 +708,7 @@ add layers to the output line. YAML is space sensitive. put cursor to html, hit 
 # adding include = FALSE hides the code chunk when you knit
 # ECHO = FALSE hides code
 # to hide warnings in knitted output, set warning = FALSE in the beginning of the code chunk
-# eval = FALSE means the code will show up in the knitted document, but it wont run
+# eval = FALSE means the code wont run (might not let you knit)
 ```
 
 # Debugging and Troubleshooting
@@ -396,9 +724,6 @@ To upload to github, knit, select the two files, commit, add a comment, commit, 
 - Rmarkdown files from EDS 221
 - EDS 212 class lecture slides
 - EDS 221 class lecture slides
-  - day 1
-  - day 2
-  - day 3
   - day 4
   - day 5
   - day 6
@@ -406,6 +731,12 @@ To upload to github, knit, select the two files, commit, add a comment, commit, 
   - day 8
   - day 9
   - day 10
+  - day 6 interactive
+  - favorite dessert
+  - icecreamsealion
+  - long term ice
+  - marie alex meds
+  - stl lead
 - EDS 221 interactive session
 - look at Rstudio cheat sheets and reference guides
 - tidyr cheat sheet
